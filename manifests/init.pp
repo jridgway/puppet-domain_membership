@@ -105,14 +105,14 @@ class domain_membership (
   $command = "(Get-WmiObject -Class Win32_ComputerSystem).JoinDomainOrWorkGroup('${domain}',${_password},'${username}@${_user_domain}',${_machine_ou},${join_options})"
 
   exec { 'join_domain':
-    command  => "exit ${command}.ReturnValue",
+    command  => Sensitive.new("exit ${command}.ReturnValue"),
     unless   => "if((Get-WmiObject -Class Win32_ComputerSystem).domain -ne '${domain}'){ exit 1 }",
     provider => powershell,
   }
 
   if $resetpw {
     exec { 'reset_computer_trust':
-      command  => "netdom /RESETPWD /UserD:${_reset_username} /PasswordD:${_password} /Server:${domain}",
+      command  => Sensitive.new("netdom /RESETPWD /UserD:${_reset_username} /PasswordD:${_password} /Server:${domain}"),
       unless   => "if ($(nltest /sc_verify:${domain}) -match 'ERROR_INVALID_PASSWORD') {exit 1}",
       provider => powershell,
       require  => Exec['join_domain'],
